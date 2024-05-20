@@ -74,7 +74,7 @@ jobs:
       with:
         components: rustfmt
     - name: cargo-semver-checks
-      uses: obi1kenobi/cargo-semver-checks-action@v2
+      uses: obi1kenobi/cargo-semver-checks-action@v2.3
   external-types:
     strategy:
       matrix:
