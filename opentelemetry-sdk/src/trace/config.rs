@@ -128,7 +128,7 @@ impl Default for Config {
                         Box::new(Sampler::TraceIdRatioBased(r))
                     } else {
                         handle_error(
-                            Error::Other(String::from(
+                            Error::Others(String::from(
                                 "Missing or invalid OTEL_TRACES_SAMPLER_ARG value. Falling back to default: 1.0"))
                         );
                         Box::new(Sampler::TraceIdRatioBased(1.0))
@@ -148,7 +148,7 @@ impl Default for Config {
                         ))))
                     } else {
                         handle_error(
-                            Error::Other(String::from(
+                            Error::Others(String::from(
                             "Missing or invalid OTEL_TRACES_SAMPLER_ARG value. Falling back to default: 1.0"
                         )));
                         Box::new(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
@@ -158,24 +158,24 @@ impl Default for Config {
                 }
                 "parentbased_jaeger_remote" => {
                     handle_error(
-                        Error::Other(String::from(
+                        Error::Others(String::from(
                         "Unimplemented parentbased_jaeger_remote sampler. Falling back to default: parentbased_always_on"
                     )));
                     Box::new(Sampler::ParentBased(Box::new(Sampler::AlwaysOn)))
                 }
                 "jaeger_remote" => {
                     handle_error(
-                        Error::Other(String::from("Unimplemented jaeger_remote sampler. Falling back to default: parentbased_always_on")));
+                        Error::Others(String::from("Unimplemented jaeger_remote sampler. Falling back to default: parentbased_always_on")));
                     Box::new(Sampler::ParentBased(Box::new(Sampler::AlwaysOn)))
                 }
                 "xray" => {
                     handle_error(
-                        Error::Other(String::from("Unimplemented xray sampler. Falling back to default: parentbased_always_on")));
+                        Error::Others(String::from("Unimplemented xray sampler. Falling back to default: parentbased_always_on")));
                     Box::new(Sampler::ParentBased(Box::new(Sampler::AlwaysOn)))
                 }
                 s => {
                     handle_error(
-                        Error::Other(format!("Unrecognised OTEL_TRACES_SAMPLER value: {}. Falling back to default: parentbased_always_on",
+                        Error::Others(format!("Unrecognised OTEL_TRACES_SAMPLER value: {}. Falling back to default: parentbased_always_on",
                         s
                     )));
                     Box::new(Sampler::ParentBased(Box::new(Sampler::AlwaysOn)))
