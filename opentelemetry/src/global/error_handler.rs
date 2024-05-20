@@ -39,12 +39,12 @@ pub enum Error {
 
     #[error("{0}")]
     /// Other types of failures not covered by the variants above.
-    Other(String),
+    Others(String),
 }
 
 impl<T> From<PoisonError<T>> for Error {
     fn from(err: PoisonError<T>) -> Self {
-        Error::Other(err.to_string())
+        Error::Others(err.to_string())
     }
 }
 
@@ -69,7 +69,7 @@ pub fn handle_error<T: Into<Error>>(err: T) {
             Error::Propagation(err) => {
                 eprintln!("OpenTelemetry propagation error occurred. {}", err)
             }
-            Error::Other(err_msg) => eprintln!("OpenTelemetry error occurred. {}", err_msg),
+            Error::Others(err_msg) => eprintln!("OpenTelemetry error occurred. {}", err_msg),
         },
     }
 }
