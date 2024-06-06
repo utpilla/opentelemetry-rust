@@ -22,9 +22,13 @@ jobs:
           - rust: stable
             os: macos-latest
     runs-on: ${{ matrix.os }}
-    env:
-      RUSTFLAGS: "-C link-arg=-fuse-ld=lld -D warnings"
+    #env:
+      #RUSTFLAGS: "-C link-arg=-fuse-ld=lld -D warnings"
     steps:
+    - name: Set environment variable
+      if: ${{ matrix.os == 'ubuntu-latest'}} || ${{ matrix.os == 'windows-latest'}}
+      run: |
+        echo ""RUSTFLAGS"=-"C link-arg=-fuse-ld=lld -D warnings"" >> "$GITHUB_ENV"
     - name: Free disk space
       if: ${{ matrix.os == 'ubuntu-latest'}}
       run: |
