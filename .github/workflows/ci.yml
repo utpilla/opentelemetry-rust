@@ -30,12 +30,10 @@ jobs:
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /usr/share/dotnet
         df -h
-    - name: Install lld on Ubuntu
-      if: ${{ matrix.os == 'ubuntu-latest'}}
-      run: sudo apt-get install lld
-    - name: Install lld on Windows
-      if: ${{ matrix.os == 'windows-latest'}}
-      run: choco install lld
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v2
+      with:
+        version: "10.0"
     - uses: actions/checkout@v4
       with:
         submodules: true
