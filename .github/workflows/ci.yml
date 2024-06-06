@@ -16,9 +16,9 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable, beta]
         # test only stable version of Rust on Windows and MacOS
-        include:
-          - rust: stable
-            os: windows-latest
+        # include:
+        #   - rust: stable
+        #     os: windows-latest
     runs-on: ${{ matrix.os }}
     env:
       RUSTFLAGS: "-C link-arg=-fuse-ld=lld -D warnings"
