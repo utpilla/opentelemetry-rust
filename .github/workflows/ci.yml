@@ -16,9 +16,9 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable, beta]
         # test only stable version of Rust on Windows and MacOS
-        # include:
-        #   - rust: stable
-        #     os: windows-latest
+        include:
+          - rust: stable
+            os: windows-latest
     runs-on: ${{ matrix.os }}
     env:
       RUSTFLAGS: "-C link-arg=-fuse-ld=lld -D warnings"
@@ -30,8 +30,12 @@ jobs:
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /usr/share/dotnet
         df -h
-    - name: Install lld
+    - name: Install lld on Ubuntu
+      if: ${{ matrix.os == 'ubuntu-latest'}}
       run: sudo apt-get install lld
+    - name: Install lld on Windows
+      if: ${{ matrix.os == 'windows-latest'}}
+      run: choco install lld
     - uses: actions/checkout@v4
       with:
         submodules: true
