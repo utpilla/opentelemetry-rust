@@ -19,9 +19,9 @@ jobs:
         include:
           - rust: stable
             os: windows-latest
-          - rust: stable
-            os: macos-latest
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: "-C link-arg=-fuse-ld=lld -D warnings"
     steps:
     - name: Free disk space
       if: ${{ matrix.os == 'ubuntu-latest'}}
@@ -30,6 +30,18 @@ jobs:
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /usr/share/dotnet
         df -h
+    - name: Cache LLVM and Clang
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ${{ runner.temp }}/llvm/10.0
+        key: cached-llvm-10.0
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: '10.0'
+        directory: ${{ runner.temp }}/llvm/10.0
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
     - uses: actions/checkout@v4
       with:
         submodules: true
