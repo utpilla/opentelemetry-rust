@@ -64,6 +64,19 @@ jobs:
         args: --all -- --check
     - name: Lint
       run: bash ./scripts/lint.sh
+  semver:
+    runs-on: ubuntu-latest
+    name: semver
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Install stable
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - name: cargo-semver-checks
+      uses: obi1kenobi/cargo-semver-checks-action@v2.3
   external-types:
     strategy:
       matrix:
