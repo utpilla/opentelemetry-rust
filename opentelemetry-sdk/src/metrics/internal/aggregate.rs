@@ -1,10 +1,11 @@
-use std::{marker, sync::Arc};
+use core::f64;
+use std::{any::{Any, TypeId}, marker, sync::Arc, u64};
 
 use opentelemetry::KeyValue;
+use serde_json::de;
 
 use crate::metrics::{
-    data::{Aggregation, Gauge},
-    Temporality,
+    data::{AggregatedData, Gauge}, internal::last_value, Temporality
 };
 
 use super::{
@@ -41,17 +42,17 @@ pub(crate) trait ComputeAggregation: Send + Sync + 'static {
     /// If no initial aggregation exists, `dest` will be `None`, in which case the
     /// returned option is expected to contain a new aggregation with the data from
     /// the current collection cycle.
-    fn call(&self, dest: Option<&mut dyn Aggregation>) -> (usize, Option<Box<dyn Aggregation>>);
+    fn call(&self, dest: Option<&mut AggregatedData>) -> (usize, Option<AggregatedData>);
 }
 
 impl<T> ComputeAggregation for T
 where
-    T: Fn(Option<&mut dyn Aggregation>) -> (usize, Option<Box<dyn Aggregation>>)
+    T: Fn(Option<&mut AggregatedData>) -> (usize, Option<AggregatedData>)
         + Send
         + Sync
         + 'static,
 {
-    fn call(&self, dest: Option<&mut dyn Aggregation>) -> (usize, Option<Box<dyn Aggregation>>) {
+    fn call(&self, dest: Option<&mut AggregatedData>) -> (usize, Option<AggregatedData>) {
         self(dest)
     }
 }
@@ -74,7 +75,7 @@ pub(crate) struct AggregateBuilder<T> {
 
 type Filter = Arc<dyn Fn(&KeyValue) -> bool + Send + Sync>;
 
-impl<T: Number> AggregateBuilder<T> {
+impl<T: Number + Any> AggregateBuilder<T> {
     pub(crate) fn new(temporality: Option<Temporality>, filter: Option<Filter>) -> Self {
         AggregateBuilder {
             temporality,
@@ -99,33 +100,90 @@ impl<T: Number> AggregateBuilder<T> {
 
     /// Builds a last-value aggregate function input and output.
     pub(crate) fn last_value(&self) -> (impl Measure<T>, impl ComputeAggregation) {
-        let lv_filter = Arc::new(LastValue::new());
-        let lv_agg = Arc::clone(&lv_filter);
-        let t = self.temporality;
+        let self_as_any = self as &dyn Any;
+        let u64 = TypeId::of::<AggregateBuilder<u64>>();
+        let f64 = TypeId::of::<AggregateBuilder<f64>>();
+        let i64 = TypeId::of::<AggregateBuilder<i64>>();
 
-        (
-            self.filter(move |n, a: &[KeyValue]| lv_filter.measure(n, a)),
-            move |dest: Option<&mut dyn Aggregation>| {
-                let g = dest.and_then(|d| d.as_mut().downcast_mut::<Gauge<T>>());
-                let mut new_agg = if g.is_none() {
-                    Some(Gauge {
-                        data_points: vec![],
-                    })
-                } else {
-                    None
-                };
-                let g = g.unwrap_or_else(|| new_agg.as_mut().expect("present if g is none"));
+        match self_as_any.type_id() {
+            u64 => {
+                let lv_filter = Arc::new(LastValue::<u64>::new());
+                let lv_agg = Arc::clone(&lv_filter);
+                (
+                    self.filter(move |n, a: &[KeyValue]| lv_filter.measure(n, a)),
+                    move |dest: Option<&mut AggregatedData>| {
+                        if let Some(gauge) = dest {
+                            match gauge {
+                                AggregatedData::U64Gauge(gauge) => {
+                                    lv_agg.compute_aggregation_cumulative(&mut gauge.data_points)
+                                }
+                                _ => {}
+                            }
+                        }
+                        (0, None)
+                    },
+                )
+            }
+            f64 => {
+                let lv_filter = Arc::new(LastValue::<f64>::new());
+                let lv_agg = Arc::clone(&lv_filter);
+            }
+            i64 => {
+                let lv_filter = Arc::new(LastValue::<i64>::new());
+                let lv_agg = Arc::clone(&lv_filter);
+            }
+        }
 
-                match t {
-                    Some(Temporality::Delta) => {
-                        lv_agg.compute_aggregation_delta(&mut g.data_points)
-                    }
-                    _ => lv_agg.compute_aggregation_cumulative(&mut g.data_points),
-                }
+        // if self_as_any.is::<AggregateBuilder<u64>>() {
+        //     let lv_filter = Arc::new(LastValue::<u64>::new());
+        //     let lv_agg = Arc::clone(&lv_filter);
+        // }
 
-                (g.data_points.len(), new_agg.map(|a| Box::new(a) as Box<_>))
-            },
-        )
+        // let lv_filter = Arc::new(LastValue::new());
+        // let lv_agg = Arc::clone(&lv_filter);
+
+        // (
+        //     self.filter(move |n, a: &[KeyValue]| lv_filter.measure(n, a)),
+        //     move |dest: Option<&mut AggregatedData>| {
+        //         // let g = dest.and_then(|d| d.as_mut().downcast_mut::<Gauge<T>>());
+        //         let dest = dest.take();
+        //         if let Some(gauge) = dest {
+        //             match gauge {
+        //                 AggregatedData::U64Gauge(gauge) => {
+        //                     match t {
+        //                         Some(Temporality::Delta) => {
+        //                             lv_agg.compute_aggregation_delta(&mut gauge.data_points)
+        //                         }
+        //                         _ => lv_agg.compute_aggregation_cumulative(&mut gauge.data_points),
+        //                     }
+        //                     return (gauge.data_points.len(), gauge);
+        //                 }
+        //                 _ => {
+        //                     return (0, None);
+        //                 }
+        //             }
+        //         } else {
+        //             (0, None)
+        //         }
+
+        //         match dest {
+        //             Some(AggregatedData::U64Gauge(gauge)) => {
+        //                 let lv_filter = Arc::new(LastValue::<u64>::new());
+        //                 let lv_agg = Arc::clone(&lv_filter);
+        //                 match t {
+        //                     Some(Temporality::Delta) => {
+        //                         lv_agg.compute_aggregation_delta(&mut gauge.data_points)
+        //                     }
+        //                     _ => lv_agg.compute_aggregation_cumulative(&mut gauge.data_points),
+        //                 }
+        //                     (gauge.data_points.len(), Some(AggregatedData::U64Gauge(gauge)))
+        //             },
+        //             _ => {
+        //                 return (0, None);
+        //             }
+        //         }
+        //     }
+        // )
     }
 
     /// Builds a precomputed sum aggregate function input and output.
@@ -139,7 +197,7 @@ impl<T: Number> AggregateBuilder<T> {
 
         (
             self.filter(move |n, a: &[KeyValue]| s.measure(n, a)),
-            move |dest: Option<&mut dyn Aggregation>| match t {
+            move |dest: Option<&mut AggregatedData>| match t {
                 Some(Temporality::Delta) => agg_sum.delta(dest),
                 _ => agg_sum.cumulative(dest),
             },
@@ -154,7 +212,7 @@ impl<T: Number> AggregateBuilder<T> {
 
         (
             self.filter(move |n, a: &[KeyValue]| s.measure(n, a)),
-            move |dest: Option<&mut dyn Aggregation>| match t {
+            move |dest: Option<&mut AggregatedData>| match t {
                 Some(Temporality::Delta) => agg_sum.delta(dest),
                 _ => agg_sum.cumulative(dest),
             },
@@ -174,7 +232,7 @@ impl<T: Number> AggregateBuilder<T> {
 
         (
             self.filter(move |n, a: &[KeyValue]| h.measure(n, a)),
-            move |dest: Option<&mut dyn Aggregation>| match t {
+            move |dest: Option<&mut AggregatedData>| match t {
                 Some(Temporality::Delta) => agg_h.delta(dest),
                 _ => agg_h.cumulative(dest),
             },
@@ -200,7 +258,7 @@ impl<T: Number> AggregateBuilder<T> {
 
         (
             self.filter(move |n, a: &[KeyValue]| h.measure(n, a)),
-            move |dest: Option<&mut dyn Aggregation>| match t {
+            move |dest: Option<&mut AggregatedData>| match t {
                 Some(Temporality::Delta) => agg_h.delta(dest),
                 _ => agg_h.cumulative(dest),
             },

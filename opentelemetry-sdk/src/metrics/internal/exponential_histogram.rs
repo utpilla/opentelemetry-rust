@@ -4,7 +4,7 @@ use opentelemetry::{otel_debug, KeyValue};
 use std::sync::OnceLock;
 
 use crate::metrics::{
-    data::{self, Aggregation},
+    data::{self, AggregatedData},
     Temporality,
 };
 
@@ -387,8 +387,8 @@ impl<T: Number> ExpoHistogram<T> {
 
     pub(crate) fn delta(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
 
         let h = dest.and_then(|d| d.as_mut().downcast_mut::<data::ExponentialHistogram<T>>());
@@ -448,8 +448,8 @@ impl<T: Number> ExpoHistogram<T> {
 
     pub(crate) fn cumulative(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
 
         let h = dest.and_then(|d| d.as_mut().downcast_mut::<data::ExponentialHistogram<T>>());
@@ -1428,7 +1428,7 @@ mod tests {
         for test in test_cases {
             let (in_fn, out_fn) = (test.build)();
 
-            let mut got: Box<dyn data::Aggregation> = Box::new(data::ExponentialHistogram::<T> {
+            let mut got: Box<AggregatedData> = Box::new(data::ExponentialHistogram::<T> {
                 data_points: vec![],
                 temporality: Temporality::Delta,
             });
@@ -1446,8 +1446,8 @@ mod tests {
     }
 
     fn assert_aggregation_eq<T: Number + PartialEq>(
-        a: Box<dyn Aggregation>,
-        b: Box<dyn Aggregation>,
+        a: Box<AggregatedData>,
+        b: Box<AggregatedData>,
         ignore_timestamp: bool,
         test_name: &'static str,
     ) {

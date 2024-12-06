@@ -3,7 +3,7 @@ use std::ops::DerefMut;
 use std::vec;
 use std::{sync::Mutex, time::SystemTime};
 
-use crate::metrics::data::{self, Aggregation, DataPoint};
+use crate::metrics::data::{self, AggregatedData, DataPoint};
 use crate::metrics::Temporality;
 use opentelemetry::KeyValue;
 
@@ -69,8 +69,8 @@ impl<T: Number> Sum<T> {
 
     pub(crate) fn delta(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
 
         let s_data = dest.and_then(|d| d.as_mut().downcast_mut::<data::Sum<T>>());
@@ -109,8 +109,8 @@ impl<T: Number> Sum<T> {
 
     pub(crate) fn cumulative(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
 
         let s_data = dest.and_then(|d| d.as_mut().downcast_mut::<data::Sum<T>>());

@@ -1,4 +1,4 @@
-use log::{error, Level};
+use log::{error, warn, Level};
 use opentelemetry::KeyValue;
 use opentelemetry_appender_log::OpenTelemetryLogBridge;
 use opentelemetry_sdk::logs::LoggerProvider;
@@ -24,4 +24,5 @@ fn main() {
     // Emit logs using macros from the log crate.
     // These logs gets piped through OpenTelemetry bridge and gets exported to stdout.
     error!(target: "my-target", "hello from {}. My price is {}", "apple", 2.99);
+    warn!(target: "my-target", "hello from {}. My price is {}", "banana", 1.99);
 }

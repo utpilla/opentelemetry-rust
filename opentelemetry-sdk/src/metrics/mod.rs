@@ -109,6 +109,7 @@ mod tests {
     use crate::metrics::data::ResourceMetrics;
     use crate::testing::metrics::InMemoryMetricExporterBuilder;
     use crate::{runtime, testing::metrics::InMemoryMetricExporter};
+    use data::AggregatedData;
     use opentelemetry::metrics::{Counter, Meter, UpDownCounter};
     use opentelemetry::InstrumentationScope;
     use opentelemetry::{metrics::MeterProvider as _, KeyValue};
@@ -2454,11 +2455,11 @@ mod tests {
             assert!(resource_metrics.is_empty(), "no metrics should be exported");
         }
 
-        fn get_aggregation<T: data::Aggregation>(
+        fn get_aggregation(
             &mut self,
             counter_name: &str,
             unit_name: Option<&str>,
-        ) -> &T {
+        ) -> &AggregatedData {
             self.resource_metrics = self
                 .exporter
                 .get_finished_metrics()
@@ -2490,19 +2491,15 @@ mod tests {
                 assert_eq!(metric.unit, expected_unit);
             }
 
-            metric
-                .data
-                .as_any()
-                .downcast_ref::<T>()
-                .expect("Failed to cast aggregation to expected type")
+            &metric.data
         }
 
-        fn get_from_multiple_aggregations<T: data::Aggregation>(
+        fn get_from_multiple_aggregations(
             &mut self,
             counter_name: &str,
             unit_name: Option<&str>,
             invocation_count: usize,
-        ) -> Vec<&T> {
+        ) -> Vec<&AggregatedData> {
             self.resource_metrics = self
                 .exporter
                 .get_finished_metrics()
@@ -2538,12 +2535,7 @@ mod tests {
                         assert_eq!(metric.unit, expected_unit);
                     }
 
-                    let aggregation = metric
-                        .data
-                        .as_any()
-                        .downcast_ref::<T>()
-                        .expect("Failed to cast aggregation to expected type");
-                    aggregation
+                    metric.data
                 })
                 .collect::<Vec<_>>();
 

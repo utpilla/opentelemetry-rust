@@ -2,8 +2,8 @@ use std::mem::replace;
 use std::ops::DerefMut;
 use std::{sync::Mutex, time::SystemTime};
 
-use crate::metrics::data::HistogramDataPoint;
-use crate::metrics::data::{self, Aggregation};
+use crate::metrics::data::{AggregatedData, HistogramDataPoint};
+use crate::metrics::data::{self};
 use crate::metrics::Temporality;
 use opentelemetry::KeyValue;
 
@@ -107,8 +107,8 @@ impl<T: Number> Histogram<T> {
 
     pub(crate) fn delta(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
         let h = dest.and_then(|d| d.as_mut().downcast_mut::<data::Histogram<T>>());
         let mut new_agg = if h.is_none() {
@@ -162,8 +162,8 @@ impl<T: Number> Histogram<T> {
 
     pub(crate) fn cumulative(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
         let h = dest.and_then(|d| d.as_mut().downcast_mut::<data::Histogram<T>>());
         let mut new_agg = if h.is_none() {

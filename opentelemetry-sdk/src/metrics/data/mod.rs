@@ -1,6 +1,6 @@
 //! Types for delivery of pre-aggregated metric time series data.
 
-use std::{any, borrow::Cow, fmt, time::SystemTime};
+use std::{borrow::Cow, time::SystemTime};
 
 use opentelemetry::{InstrumentationScope, KeyValue};
 
@@ -38,19 +38,32 @@ pub struct Metric {
     /// The unit in which the instrument reports.
     pub unit: Cow<'static, str>,
     /// The aggregated data from an instrument.
-    pub data: Box<dyn Aggregation>,
+    pub data: AggregatedData,
 }
 
-/// The store of data reported by an [Instrument].
-///
-/// It will be one of: [Gauge], [Sum], or [Histogram].
-///
-/// [Instrument]: crate::metrics::Instrument
-pub trait Aggregation: fmt::Debug + any::Any + Send + Sync {
-    /// Support downcasting
-    fn as_any(&self) -> &dyn any::Any;
-    /// Support downcasting during aggregation
-    fn as_mut(&mut self) -> &mut dyn any::Any;
+#[derive(Debug)]
+/// The aggregated data from an instrument.
+pub enum AggregatedData {
+    /// Represents aggregated measurements from Gauge<u64>.
+    U64Gauge(Gauge<u64>),
+    /// Represents aggregated measurements from Gauge<f64>.
+    F64Gauge(Gauge<f64>),
+    /// Represents aggregated measurements from Gauge<i64>.
+    I64Gauge(Gauge<i64>),
+    /// Represents aggregated measurements from Sum<u64>.
+    U64Sum(Sum<u64>),
+    /// Represents aggregated measurements from Sum<u64>.
+    F64Sum(Sum<f64>),
+    /// Represents aggregated measurements from Sum<u64>.
+    I64Sum(Sum<i64>),
+    /// Represents aggregated measurements from Histogram<u64>.
+    U64Histogram(Histogram<u64>),
+    /// Represents aggregated measurements from Histogram<f64>.
+    F64Histogram(Histogram<f64>),
+    /// Represents aggregated measurements from ExponentialHistogram<u64>.
+    U64ExponentialHistogram(ExponentialHistogram<u64>),
+    /// Represents aggregated measurements from ExponentialHistogram<f64>.
+    F64ExponentialHistogram(ExponentialHistogram<f64>),
 }
 
 /// A measurement of the current value of an instrument.
@@ -58,15 +71,6 @@ pub trait Aggregation: fmt::Debug + any::Any + Send + Sync {
 pub struct Gauge<T> {
     /// Represents individual aggregated measurements with unique attributes.
     pub data_points: Vec<DataPoint<T>>,
-}
-
-impl<T: fmt::Debug + Send + Sync + 'static> Aggregation for Gauge<T> {
-    fn as_any(&self) -> &dyn any::Any {
-        self
-    }
-    fn as_mut(&mut self) -> &mut dyn any::Any {
-        self
-    }
 }
 
 /// Represents the sum of all measurements of values from an instrument.
@@ -79,15 +83,6 @@ pub struct Sum<T> {
     pub temporality: Temporality,
     /// Whether this aggregation only increases or decreases.
     pub is_monotonic: bool,
-}
-
-impl<T: fmt::Debug + Send + Sync + 'static> Aggregation for Sum<T> {
-    fn as_any(&self) -> &dyn any::Any {
-        self
-    }
-    fn as_mut(&mut self) -> &mut dyn any::Any {
-        self
-    }
 }
 
 /// DataPoint is a single data point in a time series.
@@ -126,15 +121,6 @@ pub struct Histogram<T> {
     /// Describes if the aggregation is reported as the change from the last report
     /// time, or the cumulative changes since a fixed start time.
     pub temporality: Temporality,
-}
-
-impl<T: fmt::Debug + Send + Sync + 'static> Aggregation for Histogram<T> {
-    fn as_any(&self) -> &dyn any::Any {
-        self
-    }
-    fn as_mut(&mut self) -> &mut dyn any::Any {
-        self
-    }
 }
 
 /// A single histogram data point in a time series.
@@ -193,15 +179,6 @@ pub struct ExponentialHistogram<T> {
     /// Describes if the aggregation is reported as the change from the last report
     /// time, or the cumulative changes since a fixed start time.
     pub temporality: Temporality,
-}
-
-impl<T: fmt::Debug + Send + Sync + 'static> Aggregation for ExponentialHistogram<T> {
-    fn as_any(&self) -> &dyn any::Any {
-        self
-    }
-    fn as_mut(&mut self) -> &mut dyn any::Any {
-        self
-    }
 }
 
 /// A single exponential histogram data point in a time series.

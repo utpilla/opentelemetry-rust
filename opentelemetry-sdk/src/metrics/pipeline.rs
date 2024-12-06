@@ -1,8 +1,6 @@
 use core::fmt;
 use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-    sync::{Arc, Mutex},
+    any::Any, borrow::Cow, collections::{HashMap, HashSet}, sync::{Arc, Mutex}
 };
 
 use opentelemetry::{otel_debug, InstrumentationScope, KeyValue};
@@ -215,7 +213,7 @@ struct Inserter<T> {
 
 impl<T> Inserter<T>
 where
-    T: Number,
+    T: Number + Any,
 {
     fn new(p: Arc<Pipeline>, vc: Arc<Mutex<HashMap<Cow<'static, str>, InstrumentId>>>) -> Self {
         Inserter {
@@ -484,7 +482,7 @@ type AggregateFns<T> = (
 /// Returns new aggregate functions for the given params.
 ///
 /// If the aggregation is unknown or temporality is invalid, an error is returned.
-fn aggregate_fn<T: Number>(
+fn aggregate_fn<T: Number + Any>(
     b: AggregateBuilder<T>,
     agg: &aggregation::Aggregation,
     kind: InstrumentKind,

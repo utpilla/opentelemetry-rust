@@ -1,6 +1,6 @@
 use opentelemetry::KeyValue;
 
-use crate::metrics::data::{self, Aggregation, DataPoint};
+use crate::metrics::data::{self, AggregatedData, DataPoint};
 use crate::metrics::Temporality;
 
 use super::{last_value::Assign, AtomicTracker, Number, ValueMap};
@@ -31,8 +31,8 @@ impl<T: Number> PrecomputedSum<T> {
 
     pub(crate) fn delta(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
 
         let s_data = dest.and_then(|d| d.as_mut().downcast_mut::<data::Sum<T>>());
@@ -86,8 +86,8 @@ impl<T: Number> PrecomputedSum<T> {
 
     pub(crate) fn cumulative(
         &self,
-        dest: Option<&mut dyn Aggregation>,
-    ) -> (usize, Option<Box<dyn Aggregation>>) {
+        dest: Option<&mut AggregatedData>,
+    ) -> (usize, Option<AggregatedData>) {
         let t = SystemTime::now();
 
         let s_data = dest.and_then(|d| d.as_mut().downcast_mut::<data::Sum<T>>());
