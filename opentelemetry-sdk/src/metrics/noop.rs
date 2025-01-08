@@ -32,7 +32,7 @@ impl NoopSyncInstrument {
 }
 
 impl<T> SyncInstrument<T> for NoopSyncInstrument {
-    fn measure(&self, _value: T, _attributes: &[KeyValue]) {
+    fn measure(&self, _value: T, _attributes: &[KeyValue<'_>]) {
         // Ignored
     }
 }

@@ -18,11 +18,12 @@ pub(crate) use exponential_histogram::{EXPO_MAX_SCALE, EXPO_MIN_SCALE};
 use opentelemetry::{otel_warn, KeyValue};
 
 // TODO Replace it with LazyLock once it is stable
-pub(crate) static STREAM_OVERFLOW_ATTRIBUTES: OnceLock<Vec<KeyValue>> = OnceLock::new();
+pub(crate) static STREAM_OVERFLOW_ATTRIBUTES: OnceLock<Vec<KeyValue<'static>>> = OnceLock::new();
 
 #[inline]
 fn stream_overflow_attributes() -> &'static Vec<KeyValue<'static>> {
-    STREAM_OVERFLOW_ATTRIBUTES.get_or_init(|| vec![KeyValue::new("otel.metric.overflow", "true")])
+    STREAM_OVERFLOW_ATTRIBUTES
+        .get_or_init(|| vec![KeyValue::new("otel.metric.overflow", "true").to_owned()])
 }
 
 pub(crate) trait Aggregator {
@@ -55,12 +56,12 @@ where
 {
     /// Trackers store the values associated with different attribute sets.
     trackers: RwLock<HashMap<Vec<KeyValue<'static>>, Arc<A>>>,
-    
+
     /// Used ONLY by Delta collect. The data type must match the one used in
     /// `trackers` to allow mem::swap. Wrapping the type in `OnceLock` to
     /// avoid this allocation for Cumulative aggregation.
     trackers_for_collect: OnceLock<RwLock<HashMap<Vec<KeyValue<'static>>, Arc<A>>>>,
-    
+
     /// Number of different attribute set stored in the `trackers` map.
     count: AtomicUsize,
     /// Indicates whether a value with no attributes has been stored.
@@ -87,7 +88,7 @@ where
     }
 
     #[inline]
-    fn trackers_for_collect(&self) -> &RwLock<HashMap<Vec<KeyValue>, Arc<A>>> {
+    fn trackers_for_collect(&self) -> &RwLock<HashMap<Vec<KeyValue<'static>>, Arc<A>>> {
         self.trackers_for_collect
             .get_or_init(|| RwLock::new(HashMap::with_capacity(1 + STREAM_CARDINALITY_LIMIT)))
     }
@@ -157,7 +158,7 @@ where
     /// This is used in Cumulative temporality mode, where [`ValueMap`] is not cleared.
     pub(crate) fn collect_readonly<Res, MapFn>(&self, dest: &mut Vec<Res>, mut map_fn: MapFn)
     where
-        MapFn: FnMut(Vec<KeyValue>, &A) -> Res,
+        MapFn: FnMut(Vec<KeyValue<'static>>, &A) -> Res,
     {
         prepare_data(dest, self.count.load(Ordering::SeqCst));
         if self.has_no_attribute_value.load(Ordering::Acquire) {
@@ -180,7 +181,7 @@ where
     /// This is used in Delta temporality mode, where [`ValueMap`] is reset after collection.
     pub(crate) fn collect_and_reset<Res, MapFn>(&self, dest: &mut Vec<Res>, mut map_fn: MapFn)
     where
-        MapFn: FnMut(Vec<KeyValue>, A) -> Res,
+        MapFn: FnMut(Vec<KeyValue<'static>>, A) -> Res,
     {
         prepare_data(dest, self.count.load(Ordering::SeqCst));
         if self.has_no_attribute_value.swap(false, Ordering::AcqRel) {
@@ -220,11 +221,14 @@ fn prepare_data<T>(data: &mut Vec<T>, list_len: usize) {
     }
 }
 
-fn sort_and_dedup(attributes: &[KeyValue]) -> Vec<KeyValue> {
+fn sort_and_dedup(attributes: &[KeyValue<'_>]) -> Vec<KeyValue<'static>> {
     // Use newly allocated vec here as incoming attributes are immutable so
     // cannot sort/de-dup in-place. TODO: This allocation can be avoided by
     // leveraging a ThreadLocal vec.
-    let mut sorted = attributes.to_vec();
+    let mut sorted = attributes
+        .iter()
+        .map(|attrs| attrs.to_owned())
+        .collect::<Vec<_>>();
     sorted.sort_unstable_by(|a, b| a.key.cmp(&b.key));
     sorted.dedup_by(|a, b| a.key == b.key);
     sorted

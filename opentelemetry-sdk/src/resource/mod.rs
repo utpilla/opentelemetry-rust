@@ -288,18 +288,18 @@ impl ResourceBuilder {
     }
 
     /// Add a [KeyValue] to the resource.
-    pub fn with_attribute(self, kv: KeyValue) -> Self {
+    pub fn with_attribute(self, kv: KeyValue<'static>) -> Self {
         self.with_attributes([kv])
     }
 
     /// Add multiple [KeyValue]s to the resource.
-    pub fn with_attributes<T: IntoIterator<Item = KeyValue>>(mut self, kvs: T) -> Self {
+    pub fn with_attributes<T: IntoIterator<Item = KeyValue<'static>>>(mut self, kvs: T) -> Self {
         self.resource = self.resource.merge(&Resource::new(kvs));
         self
     }
 
     /// Add `service.name` resource attribute.
-    pub fn with_service_name(self, name: impl Into<Value>) -> Self {
+    pub fn with_service_name(self, name: impl Into<Value<'static>>) -> Self {
         self.with_attribute(KeyValue::new(SERVICE_NAME, name.into()))
     }
 
@@ -315,7 +315,7 @@ impl ResourceBuilder {
     /// [Schema url]: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.9.0/specification/schemas/overview.md#schema-url
     pub fn with_schema_url<KV, S>(mut self, attributes: KV, schema_url: S) -> Self
     where
-        KV: IntoIterator<Item = KeyValue>,
+        KV: IntoIterator<Item = KeyValue<'static>>,
         S: Into<Cow<'static, str>>,
     {
         self.resource = Resource::from_schema_url(attributes, schema_url).merge(&self.resource);
@@ -420,8 +420,8 @@ mod tests {
     #[case(vec![], vec![KeyValue::new("key", "b")], "http://schema/a", None)]
     #[case(vec![KeyValue::new("key", "a")], vec![KeyValue::new("key", "b")], "http://schema/a", Some("http://schema/a"))]
     fn merge_resource_with_missing_attribtes(
-        #[case] key_values_a: Vec<KeyValue>,
-        #[case] key_values_b: Vec<KeyValue>,
+        #[case] key_values_a: Vec<KeyValue<'static>>,
+        #[case] key_values_b: Vec<KeyValue<'static>>,
         #[case] schema_url: &'static str,
         #[case] expected_schema_url: Option<&'static str>,
     ) {

@@ -110,9 +110,9 @@ impl AttributeSetFilter {
         Self { filter }
     }
 
-    pub(crate) fn apply(&self, attrs: &[KeyValue], run: impl FnOnce(&[KeyValue])) {
+    pub(crate) fn apply(&self, attrs: &[KeyValue<'_>], run: impl FnOnce(&[KeyValue<'_>])) {
         if let Some(filter) = &self.filter {
-            let filtered_attrs: Vec<KeyValue> =
+            let filtered_attrs: Vec<KeyValue<'_>> =
                 attrs.iter().filter(|kv| filter(kv)).cloned().collect();
             run(&filtered_attrs);
         } else {

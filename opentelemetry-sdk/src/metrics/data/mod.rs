@@ -58,7 +58,7 @@ pub trait Aggregation: fmt::Debug + any::Any + Send + Sync {
 pub struct GaugeDataPoint<T> {
     /// Attributes is the set of key value pairs that uniquely identify the
     /// time series.
-    pub attributes: Vec<KeyValue>,
+    pub attributes: Vec<KeyValue<'static>>,
     /// The value of this data point.
     pub value: T,
     /// The sampled [Exemplar]s collected during the time series.
@@ -100,7 +100,7 @@ impl<T: fmt::Debug + Send + Sync + 'static> Aggregation for Gauge<T> {
 pub struct SumDataPoint<T> {
     /// Attributes is the set of key value pairs that uniquely identify the
     /// time series.
-    pub attributes: Vec<KeyValue>,
+    pub attributes: Vec<KeyValue<'static>>,
     /// The value of this data point.
     pub value: T,
     /// The sampled [Exemplar]s collected during the time series.

@@ -66,7 +66,10 @@ pub mod tonic {
                 InstrumentationScope {
                     name: library.name().to_owned(),
                     version: library.version().map(ToOwned::to_owned).unwrap_or_default(),
-                    attributes: Attributes::from(library.attributes().cloned()).0,
+                    attributes: Attributes::from(
+                        library.attributes().map(|attrs| attrs.to_owned()),
+                    )
+                    .0,
                     ..Default::default()
                 }
             }
@@ -97,7 +100,10 @@ pub mod tonic {
                 InstrumentationScope {
                     name: library.name().to_owned(),
                     version: library.version().map(ToOwned::to_owned).unwrap_or_default(),
-                    attributes: Attributes::from(library.attributes().cloned()).0,
+                    attributes: Attributes::from(
+                        library.attributes().map(|attrs| attrs.to_owned()),
+                    )
+                    .0,
                     ..Default::default()
                 }
             }
@@ -144,10 +150,10 @@ pub mod tonic {
                     Value::F64(val) => Some(any_value::Value::DoubleValue(*val)),
                     Value::String(val) => Some(any_value::Value::StringValue(val.to_string())),
                     Value::Array(array) => Some(any_value::Value::ArrayValue(match array {
-                        Array::Bool(vals) => array_into_proto(vals),
-                        Array::I64(vals) => array_into_proto(vals),
-                        Array::F64(vals) => array_into_proto(vals),
-                        Array::String(vals) => array_into_proto(vals),
+                        Array::Bool(vals) => array_into_proto(vals.to_vec()),
+                        Array::I64(vals) => array_into_proto(vals.to_vec()),
+                        Array::F64(vals) => array_into_proto(vals.to_vec()),
+                        Array::String(vals) => array_into_proto(vals.to_vec()),
                         _ => unreachable!("Nonexistent array type"), // Needs to be updated when new array types are added
                     })),
                     _ => unreachable!("Nonexistent value type"), // Needs to be updated when new value types are added

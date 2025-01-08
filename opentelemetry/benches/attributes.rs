@@ -83,10 +83,10 @@ fn attributes_creation(c: &mut Criterion) {
     c.bench_function("CreateOtelKeyValueArrayWithNonStaticValues", |b| {
         b.iter(|| {
             let _v1 = black_box([
-                KeyValue::new("attribute1", value[0..6].to_owned()), // value[0..6] = "value1"
-                KeyValue::new("attribute2", value[6..12].to_owned()), // value[6..12] = "value2"
-                KeyValue::new("attribute3", value[12..18].to_owned()), // value[12..18] = "value3"
-                KeyValue::new("attribute4", value[18..24].to_owned()), // value[18..24] = "value4"
+                KeyValue::new("attribute1", &value[0..6]), // value[0..6] = "value1"
+                KeyValue::new("attribute2", &value[6..12]), // value[6..12] = "value2"
+                KeyValue::new("attribute3", &value[12..18]), // value[12..18] = "value3"
+                KeyValue::new("attribute4", &value[18..24]), // value[18..24] = "value4"
             ]);
         });
     });
