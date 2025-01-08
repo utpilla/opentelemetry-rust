@@ -44,13 +44,13 @@ pub mod tonic {
 
     impl
         From<(
-            opentelemetry_sdk::InstrumentationLibrary,
+            opentelemetry::InstrumentationScope,
             Option<Cow<'static, str>>,
         )> for InstrumentationScope
     {
         fn from(
             data: (
-                opentelemetry_sdk::InstrumentationLibrary,
+                opentelemetry::InstrumentationScope,
                 Option<Cow<'static, str>>,
             ),
         ) -> Self {
@@ -64,9 +64,9 @@ pub mod tonic {
                 }
             } else {
                 InstrumentationScope {
-                    name: library.name.into_owned(),
-                    version: library.version.map(Cow::into_owned).unwrap_or_default(),
-                    attributes: Attributes::from(library.attributes).0,
+                    name: library.name().to_owned(),
+                    version: library.version().map(ToOwned::to_owned).unwrap_or_default(),
+                    attributes: Attributes::from(library.attributes().cloned()).0,
                     ..Default::default()
                 }
             }
@@ -75,13 +75,13 @@ pub mod tonic {
 
     impl
         From<(
-            &opentelemetry_sdk::InstrumentationLibrary,
+            &opentelemetry::InstrumentationScope,
             Option<Cow<'static, str>>,
         )> for InstrumentationScope
     {
         fn from(
             data: (
-                &opentelemetry_sdk::InstrumentationLibrary,
+                &opentelemetry::InstrumentationScope,
                 Option<Cow<'static, str>>,
             ),
         ) -> Self {
@@ -95,13 +95,9 @@ pub mod tonic {
                 }
             } else {
                 InstrumentationScope {
-                    name: library.name.to_string(),
-                    version: library
-                        .version
-                        .as_ref()
-                        .map(ToString::to_string)
-                        .unwrap_or_default(),
-                    attributes: Attributes::from(library.attributes.clone()).0,
+                    name: library.name().to_owned(),
+                    version: library.version().map(ToOwned::to_owned).unwrap_or_default(),
+                    attributes: Attributes::from(library.attributes().cloned()).0,
                     ..Default::default()
                 }
             }
@@ -112,8 +108,8 @@ pub mod tonic {
     #[derive(Default, Debug)]
     pub struct Attributes(pub ::std::vec::Vec<crate::proto::tonic::common::v1::KeyValue>);
 
-    impl From<Vec<opentelemetry::KeyValue<'static>>> for Attributes {
-        fn from(kvs: Vec<opentelemetry::KeyValue<'static>>) -> Self {
+    impl<I: IntoIterator<Item = opentelemetry::KeyValue<'static>>> From<I> for Attributes {
+        fn from(kvs: I) -> Self {
             Attributes(
                 kvs.into_iter()
                     .map(|api_kv| KeyValue {
@@ -148,11 +144,13 @@ pub mod tonic {
                     Value::F64(val) => Some(any_value::Value::DoubleValue(*val)),
                     Value::String(val) => Some(any_value::Value::StringValue(val.to_string())),
                     Value::Array(array) => Some(any_value::Value::ArrayValue(match array {
-                        Array::Bool(vals) => array_into_proto(vals.to_vec()),
-                        Array::I64(vals) => array_into_proto(vals.to_vec()),
-                        Array::F64(vals) => array_into_proto(vals.to_vec()),
-                        Array::String(vals) => array_into_proto(vals.to_vec()),
+                        Array::Bool(vals) => array_into_proto(vals),
+                        Array::I64(vals) => array_into_proto(vals),
+                        Array::F64(vals) => array_into_proto(vals),
+                        Array::String(vals) => array_into_proto(vals),
+                        _ => unreachable!("Nonexistent array type"), // Needs to be updated when new array types are added
                     })),
+                    _ => unreachable!("Nonexistent value type"), // Needs to be updated when new value types are added
                 },
             }
         }
