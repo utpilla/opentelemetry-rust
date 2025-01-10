@@ -121,19 +121,19 @@ fn histogram_record_with_non_static_values(c: &mut Criterion, attribute_values: 
                     &[
                         KeyValue::new(
                             "attribute1",
-                            attribute_values[index_first_attribute].as_str().to_owned(),
+                            attribute_values[index_first_attribute].as_str(),
                         ),
                         KeyValue::new(
                             "attribute2",
-                            attribute_values[index_second_attribute].as_str().to_owned(),
+                            attribute_values[index_second_attribute].as_str(),
                         ),
                         KeyValue::new(
                             "attribute3",
-                            attribute_values[index_third_attribute].as_str().to_owned(),
+                            attribute_values[index_third_attribute].as_str(),
                         ),
                         KeyValue::new(
                             "attribute4",
-                            attribute_values[index_fourth_attribute].as_str().to_owned(),
+                            attribute_values[index_fourth_attribute].as_str(),
                         ),
                     ],
                 );
