@@ -47,8 +47,11 @@ mod error;
 pub mod exporter;
 pub(crate) mod instrument;
 pub(crate) mod internal;
+<<<<<<< Updated upstream
 #[cfg(feature = "experimental_metrics_custom_reader")]
 pub(crate) mod manual_reader;
+=======
+>>>>>>> Stashed changes
 pub(crate) mod meter;
 mod meter_provider;
 pub(crate) mod noop;
@@ -75,8 +78,11 @@ pub use in_memory_exporter::{InMemoryMetricExporter, InMemoryMetricExporterBuild
 pub use aggregation::*;
 #[cfg(feature = "spec_unstable_metrics_views")]
 pub use error::{MetricError, MetricResult};
+<<<<<<< Updated upstream
 #[cfg(feature = "experimental_metrics_custom_reader")]
 pub use manual_reader::*;
+=======
+>>>>>>> Stashed changes
 pub use meter_provider::*;
 pub use periodic_reader::*;
 #[cfg(feature = "experimental_metrics_custom_reader")]
