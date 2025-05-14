@@ -9,12 +9,21 @@ use crate::Resource;
 use super::Temporality;
 
 /// A collection of [ScopeMetrics] and the associated [Resource] that created them.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ResourceMetrics {
     /// The entity that collected the metrics.
     pub resource: Resource,
     /// The collection of metrics with unique [InstrumentationScope]s.
-    pub scope_metrics: Vec<ScopeMetrics>,
+    pub(crate) scope_metrics: Vec<ScopeMetrics>,
+}
+
+impl ResourceMetrics {
+    /// # Returns
+    ///
+    /// An iterator over the scope metrics in this `ResourceMetrics`.
+    pub fn scope_metrics(&self) -> impl Iterator<Item = &ScopeMetrics> {
+        self.scope_metrics.iter()
+    }
 }
 
 /// A collection of metrics produced by a meter.
@@ -23,7 +32,16 @@ pub struct ScopeMetrics {
     /// The [InstrumentationScope] that the meter was created with.
     pub scope: InstrumentationScope,
     /// The list of aggregations created by the meter.
-    pub metrics: Vec<Metric>,
+    pub(crate) metrics: Vec<Metric>,
+}
+
+impl ScopeMetrics {
+    /// # Returns
+    ///
+    /// An iterator over the metrics in this `ScopeMetrics`.
+    pub fn metrics(&self) -> impl Iterator<Item = &Metric> {
+        self.metrics.iter()
+    }
 }
 
 /// A collection of one or more aggregated time series from an [Instrument].
@@ -146,7 +164,7 @@ pub struct SumDataPoint<T> {
 #[derive(Debug, Clone)]
 pub struct Sum<T> {
     /// Represents individual aggregated measurements with unique attributes.
-    pub data_points: Vec<SumDataPoint<T>>,
+    pub(crate) data_points: Vec<SumDataPoint<T>>,
     /// The time when the time series was started.
     pub start_time: SystemTime,
     /// The time when the time series was recorded.
@@ -156,6 +174,15 @@ pub struct Sum<T> {
     pub temporality: Temporality,
     /// Whether this aggregation only increases or decreases.
     pub is_monotonic: bool,
+}
+
+impl<T> Sum<T> {
+    /// # Returns
+    ///
+    /// An iterator over the data points in this `Sum`.
+    pub fn data_points(&self) -> impl Iterator<Item = &SumDataPoint<T>> {
+        self.data_points.iter()
+    }
 }
 
 /// Represents the histogram of all measurements of values from an instrument.

@@ -181,8 +181,7 @@ impl InMemoryMetricExporter {
                 .map(|scope_metric| ScopeMetrics {
                     scope: scope_metric.scope.clone(),
                     metrics: scope_metric
-                        .metrics
-                        .iter()
+                        .metrics()
                         .map(|metric| Metric {
                             name: metric.name.clone(),
                             description: metric.description.clone(),

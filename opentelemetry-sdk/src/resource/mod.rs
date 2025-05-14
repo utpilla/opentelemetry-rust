@@ -38,7 +38,7 @@ use std::sync::Arc;
 
 /// Inner structure of `Resource` holding the actual data.
 /// This structure is designed to be shared among `Resource` instances via `Arc`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 struct ResourceInner {
     attrs: HashMap<Key, Value>,
     schema_url: Option<Cow<'static, str>>,
@@ -46,7 +46,7 @@ struct ResourceInner {
 
 /// An immutable representation of the entity producing telemetry as attributes.
 /// Utilizes `Arc` for efficient sharing and cloning.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Resource {
     inner: Arc<ResourceInner>,
 }

@@ -405,7 +405,7 @@ impl<E: PushMetricExporter> PeriodicReaderInner<E> {
         }
 
         let metrics_count = rm.scope_metrics.iter().fold(0, |count, scope_metrics| {
-            count + scope_metrics.metrics.len()
+            count + scope_metrics.metrics().count()
         });
         otel_debug!(name: "PeriodicReaderMetricsCollected", count = metrics_count, time_taken_in_millis = time_taken_for_collect.as_millis());
 
