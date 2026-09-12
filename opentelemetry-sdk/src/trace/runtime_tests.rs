@@ -26,7 +26,8 @@ struct SpanCountExporter {
 #[cfg(any(feature = "rt-tokio", feature = "rt-tokio-current-thread"))]
 impl SpanExporter for SpanCountExporter {
     async fn export(&self, batch: SpanBatch<'_>) -> OTelSdkResult {
-        self.span_count.fetch_add(batch.len(), Ordering::SeqCst);
+        self.span_count
+            .fetch_add(batch.iter().len(), Ordering::SeqCst);
         Ok(())
     }
 }

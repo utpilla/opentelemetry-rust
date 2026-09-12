@@ -17,29 +17,13 @@ pub struct SpanBatch<'a> {
 }
 
 impl<'a> SpanBatch<'a> {
-    /// Creates a batch from a slice of span data.
-    pub fn new(spans: &'a [SpanData]) -> Self {
+    pub(crate) fn new(spans: &'a [SpanData]) -> Self {
         Self { spans }
     }
 
     /// Returns an iterator over the spans in this batch.
     pub fn iter(&self) -> std::slice::Iter<'a, SpanData> {
         self.spans.iter()
-    }
-
-    /// Returns the spans in this batch as a slice.
-    pub fn as_slice(&self) -> &'a [SpanData] {
-        self.spans
-    }
-
-    /// Returns the number of spans in this batch.
-    pub fn len(&self) -> usize {
-        self.spans.len()
-    }
-
-    /// Returns `true` if this batch contains no spans.
-    pub fn is_empty(&self) -> bool {
-        self.spans.is_empty()
     }
 }
 

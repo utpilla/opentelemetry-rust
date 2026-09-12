@@ -1670,7 +1670,8 @@ mod tests {
             let _ = self.export_started.try_send(());
             // Block until the test releases the export.
             let _ = self.release.lock().unwrap().recv();
-            self.exported_count.fetch_add(batch.len(), Ordering::SeqCst);
+            self.exported_count
+                .fetch_add(batch.iter().len(), Ordering::SeqCst);
             Ok(())
         }
     }
@@ -1747,7 +1748,7 @@ mod tests {
 
     impl SpanExporter for CountingSpanExporter {
         async fn export(&self, batch: SpanBatch<'_>) -> OTelSdkResult {
-            self.count.fetch_add(batch.len(), Ordering::SeqCst);
+            self.count.fetch_add(batch.iter().len(), Ordering::SeqCst);
             // Simulate slow export to cause queue buildup and drops
             std::thread::sleep(Duration::from_millis(20));
             Ok(())
@@ -1836,7 +1837,7 @@ mod tests {
                 // Simulate slow export
                 std::thread::sleep(Duration::from_millis(50));
                 self.exported_count
-                    .fetch_add(batch.len(), Ordering::Relaxed);
+                    .fetch_add(batch.iter().len(), Ordering::Relaxed);
                 Ok(())
             }
 
