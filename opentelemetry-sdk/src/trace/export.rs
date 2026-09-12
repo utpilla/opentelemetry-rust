@@ -7,6 +7,42 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::time::{Duration, SystemTime};
 
+/// A batch of spans to be exported by a [`SpanExporter`].
+///
+/// The batch borrows span data from the processor for the duration of the
+/// export operation.
+#[derive(Debug)]
+pub struct SpanBatch<'a> {
+    spans: &'a [SpanData],
+}
+
+impl<'a> SpanBatch<'a> {
+    /// Creates a batch from a slice of span data.
+    pub fn new(spans: &'a [SpanData]) -> Self {
+        Self { spans }
+    }
+
+    /// Returns an iterator over the spans in this batch.
+    pub fn iter(&self) -> std::slice::Iter<'a, SpanData> {
+        self.spans.iter()
+    }
+
+    /// Returns the spans in this batch as a slice.
+    pub fn as_slice(&self) -> &'a [SpanData] {
+        self.spans
+    }
+
+    /// Returns the number of spans in this batch.
+    pub fn len(&self) -> usize {
+        self.spans.len()
+    }
+
+    /// Returns `true` if this batch contains no spans.
+    pub fn is_empty(&self) -> bool {
+        self.spans.is_empty()
+    }
+}
+
 /// `SpanExporter` defines the interface that protocol-specific exporters must
 /// implement so that they can be plugged into OpenTelemetry SDK and support
 /// sending of telemetry data.
@@ -27,9 +63,12 @@ pub trait SpanExporter: Send + Sync + Debug {
     ///
     /// Any retry logic that is required by the exporter is the responsibility
     /// of the exporter.
+    ///
+    /// Exporters that need to retain span data after the returned future
+    /// completes must clone the relevant spans.
     fn export(
         &self,
-        batch: Vec<SpanData>,
+        batch: SpanBatch<'_>,
     ) -> impl std::future::Future<Output = OTelSdkResult> + Send;
 
     /// Shuts down the exporter. Called when SDK is shut down. This is an

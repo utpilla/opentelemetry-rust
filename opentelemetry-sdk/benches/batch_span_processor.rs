@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use opentelemetry::time::now;
 use opentelemetry::trace::{
     SpanContext, SpanId, SpanKind, Status, TraceFlags, TraceId, TraceState,
@@ -12,7 +12,11 @@ use std::sync::Arc;
 use tokio::runtime::Runtime;
 
 fn get_span_data() -> Vec<SpanData> {
-    (0..200)
+    get_span_data_with_count(200)
+}
+
+fn get_span_data_with_count(count: usize) -> Vec<SpanData> {
+    (0..count)
         .map(|_| SpanData {
             span_context: SpanContext::new(
                 TraceId::from(12),
@@ -34,7 +38,7 @@ fn get_span_data() -> Vec<SpanData> {
             status: Status::Unset,
             instrumentation_scope: Default::default(),
         })
-        .collect::<Vec<SpanData>>()
+        .collect()
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -81,11 +85,51 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
+fn steady_state_export_benchmark(c: &mut Criterion) {
+    const SPAN_COUNT: usize = 4_096;
+
+    let mut group = c.benchmark_group("BatchSpanProcessor/steady_state");
+    group.sample_size(20);
+    group.throughput(Throughput::Elements(SPAN_COUNT as u64));
+
+    for batch_size in [1, 64, 512] {
+        let processor = BatchSpanProcessor::builder(NoopSpanExporter::new())
+            .with_batch_config(
+                BatchConfigBuilder::default()
+                    .with_max_queue_size(SPAN_COUNT * 2)
+                    .with_max_export_batch_size(batch_size)
+                    .build(),
+            )
+            .build();
+
+        group.bench_with_input(
+            BenchmarkId::from_parameter(format!("batch_size_{batch_size}")),
+            &batch_size,
+            |b, _| {
+                b.iter_batched(
+                    || get_span_data_with_count(SPAN_COUNT),
+                    |spans| {
+                        for span in spans {
+                            processor.on_end(span);
+                        }
+                        processor.force_flush().unwrap();
+                    },
+                    BatchSize::LargeInput,
+                );
+            },
+        );
+
+        processor.shutdown().unwrap();
+    }
+
+    group.finish();
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default()
         .warm_up_time(std::time::Duration::from_secs(1))
         .measurement_time(std::time::Duration::from_secs(2));
-    targets = criterion_benchmark
+    targets = criterion_benchmark, steady_state_export_benchmark
 }
 criterion_main!(benches);
